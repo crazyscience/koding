@@ -8,6 +8,7 @@ exports.make = make = (reducers = {}) ->
     invoices: require './modules/invoices'
     stripe: require './modules/stripe'
     subscription: require './modules/subscription'
+    bongo: require './modules/bongo'
 
   reducers = _.assign {}, customReducers, reducers
 
