@@ -8,12 +8,12 @@ module.exports = bongoMiddleware = (remote) -> (store) -> (next) -> (action) ->
   rest = _.omit action, ['bongo', 'type', 'types']
 
   next
-    types: types or generateTypes type
-    promise: bongo(remote, { getState: store.getState })
+    types: generateTypes()
+    promise: -> bongo(remote, { getState: store.getState })
 
 
-generateTypes = (type) -> [
-  "#{type}_BEGIN"
-  "#{type}_SUCCESS"
-  "#{type}_FAIL"
+generateTypes = -> [
+  "BONGO_BEGIN"
+  "BONGO_SUCCESS"
+  "BONGO_FAIL"
 ]
