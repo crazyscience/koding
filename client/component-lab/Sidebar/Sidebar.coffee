@@ -1,23 +1,24 @@
 kd = require 'kd'
 React = require 'react'
-SidebarStackSection = require 'app/components/sidebarstacksection'
+SidebarStackSection = require 'lab/SidebarStackSection'
 SidebarStackHeaderSection = require 'app/components/sidebarstacksection/sidebarstackheadersection'
 SidebarNoStacks = require 'app/components/sidebarstacksection/sidebarnostacks'
-toImmutable = require 'app/util/toImmutable'
 
 
 module.exports = class Sidebar extends React.Component
 
+
   PREVIEW_COUNT = 10
 
   renderStack: (stack) ->
-    stack = toImmutable stack
+    machines = @props.stacksWithMachines[stack._id] or []
+    template = @props.stacksWithTemplates[stack._id] or {}
     <SidebarStackSection
-      key={stack.get '_id'}
-      previewCount={PREVIEW_COUNT}
-      selectedId={0}
+      key={stack._id}
       stack={stack}
-      machines={stack.get 'machines'}/>
+      template={template}
+      machines={machines}
+      reinitStack={@props.reinitStack}/>
 
 
   renderPrivateStacks: ->
@@ -31,7 +32,6 @@ module.exports = class Sidebar extends React.Component
   renderStacks : ->
 
     if @props.stacks
-      console.log 'HAYDAADA'
       <SidebarStackHeaderSection>
         {@renderTeamStacks()}
         {@renderPrivateStacks()}
@@ -40,8 +40,17 @@ module.exports = class Sidebar extends React.Component
       <SidebarNoStacks />
 
 
+  renderDrafts: ->
+
+    return  unless @props.draftStackTemplates
+
+    @props.draftStackTemplates.map (draftStackTemplate) =>
+      @renderStack draftStackTemplate
+
+
   render: ->
-    stacks = @renderStacks()
+
     <div className='Sidebar-section-wrapper'>
-      {stacks}
+      {@renderStacks()}
+      {@renderDrafts()}
     </div>
