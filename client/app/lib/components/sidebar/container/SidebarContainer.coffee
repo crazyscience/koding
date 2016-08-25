@@ -1,26 +1,47 @@
 React = require 'react'
 { connect } = require 'react-redux'
 Sidebar = require 'component-lab/Sidebar'
-{ privateStackTemplates, teamStackTemplates, privateStacks, teamStacks } = require 'app/redux/modules/bongo'
 
+{ reinitStack
+  destroyStack } = require 'app/redux/modules/bongo'
+
+{ privateStackTemplates
+  teamStackTemplates
+  privateStacks
+  teamStacks
+  stacksWithMachines
+  stacksWithTemplates
+  draftStackTemplates } = require 'app/redux/selectors/sidebar'
+
+
+mapDispatchToProps = (dispatch) ->
+
+  return {
+    reinitStack: (stack, template) ->
+      reinitStack stack, template
+    destroyStack: (stack) ->
+      destroyStack stack
+  }
 
 mapStateToProps = (state) ->
+
   return {
-    stackTemplates: state.bongo['JStackTemplate']
     stacks: state.bongo['JComputeStack']
-    group: state.bongo['JGroup']
-    privateStacks: privateStacks(state.bongo['JComputeStack'])
-    teamStacks: teamStacks(state.bongo['JComputeStack'])
-    privateStackTemplates: privateStackTemplates(state.bongo['JStackTemplate'])
-    teamStackTemplates: teamStackTemplates(state.bongo['JStackTemplate'])
+    privateStacks: privateStacks(state.bongo['JComputeStack']) or {}
+    teamStacks: teamStacks(state.bongo['JComputeStack']) or {}
+    stacksWithMachines: stacksWithMachines(state.bongo['JComputeStack'], state.bongo['JMachine'])
+    stacksWithTemplates: stacksWithTemplates(state.bongo['JComputeStack'], state.bongo['JStackTemplate'])
+    draftStackTemplates: draftStackTemplates(state.bongo['JStackTemplate'])
   }
 
 
 class SidebarContainer extends React.Component
 
-  componentDidMount: ->
-    @props.dispatch({ bongo: (remote) -> remote.api.JStackTemplate.some({}) })
-    @props.dispatch({ bongo: (remote) -> remote.api.JComputeStack.some({}) })
+  componentWillMount: ->
+
+    @props.store.dispatch({ bongo: (remote) -> remote.api.JMachine.some({}) })
+    @props.store.dispatch({ bongo: (remote) -> remote.api.JStackTemplate.some({}) })
+    @props.store.dispatch({ bongo: (remote) -> remote.api.JComputeStack.some({}) })
 
 
   render: ->
@@ -28,7 +49,11 @@ class SidebarContainer extends React.Component
     <Sidebar
       stacks={@props.stacks}
       teamStacks={@props.teamStacks}
-      privateStacks={@props.privateStacks}  />
+      privateStacks={@props.privateStacks}
+      stacksWithMachines={@props.stacksWithMachines}
+      stacksWithTemplates={@props.stacksWithTemplates}
+      draftStackTemplates={@props.draftStackTemplates}
+      reinitStack={@props.reinitStack} />
 
 
-module.exports = connect(mapStateToProps)(SidebarContainer)
+module.exports = connect(mapStateToProps, mapDispatchToProps)(SidebarContainer)
