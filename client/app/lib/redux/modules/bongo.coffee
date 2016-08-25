@@ -1,5 +1,5 @@
 immutable = require 'app/util/immutable'
-{ createSelector } = require 'reselect'
+kd = require 'kd'
 
 module.exports = bongo = (state = immutable({}), action) ->
 
@@ -9,10 +9,17 @@ module.exports = bongo = (state = immutable({}), action) ->
       { result } = action
       result = [result]  unless Array.isArray result
       result.forEach (res) ->
-        state = state.set res.constructor.name, immutable {}  unless state[res.constructor.name]
 
+        state = state.set res.constructor.name, immutable {}  unless state[res.constructor.name]
         state = state.update res.constructor.name, (collection) ->
           collection.set res._id, immutable res
+
+      return state
+
+    when 'BONGO_DELETE_SUCCESS'
+
+      { result: { _id, constructorName } } = action
+      state = state.set constructorName, state[constructorName].without("#{_id}")
 
       return state
 
@@ -33,9 +40,11 @@ exports.update = update = (instance, query) ->
   }
 
 
-exports.delete = deleteX = (instance) ->
+module.exports.deleteInstance = deleteX = (instance) ->
   return {
-    bongo: -> instance.delete()
+    type: 'BONGO_DELETE'
+    bongo: -> instance.delete().then ->
+      { result: { constructorName: instance.constructor.name, _id: instance._id } }
   }
 
 
@@ -54,43 +63,20 @@ module.exports.byId = (constructorName, id) -> (state) -> state.bongo[constructo
 module.exports.all = (constructorName) -> (state) -> state.bongo[constructorName]
 
 
-module.exports.privateStackTemplates = (stackTemplates) ->
+module.exports.reinitStack = (stack, template) ->
 
-  privateStackTemplates = []
-  return null  unless stackTemplates
-  for id in Object.keys(stackTemplates)
-    if stackTemplates[id].accessLevel is 'private'
-      privateStackTemplates.push stackTemplates[id]
+  return  unless template
 
-  return privateStackTemplates
+  { computeController } = kd.singletons
 
-module.exports.privateStacks = (stacks) ->
+  groupStack = stack.config?.groupStack
+  computeController.destroyStack stack, (err) ->
+    #delete instance event should be cathced in the bongo middleware
+    if template and not groupStack
+    then computeController.createDefaultStack no, template
+    else computeController.createDefaultStack()
 
-  privateStacks = []
-  return null  unless stacks
-  for id in Object.keys(stacks)
-    unless stacks[id].config.groupStack
-      privateStacks.push stacks[id]
+module.exports.destroyStack = (stack) ->
 
-  return privateStacks
-
-module.exports.teamStackTemplates =  (stackTemplates) ->
-
-  teamStackTemplates = []
-  return null  unless stackTemplates
-  for id in Object.keys(stackTemplates)
-    if stackTemplates[id].accessLevel is 'group'
-      teamStackTemplates.push stackTemplates[id]
-
-  return teamStackTemplates
-
-module.exports.teamStacks =  (stacks) ->
-
-  teamStacks = []
-  return null  unless stacks
-  for id in Object.keys(stacks)
-    if stacks[id].config.groupStack
-      teamStacks.push stacks[id]
-
-  return teamStacks
+  return  unless stack
 
